@@ -1,147 +1,195 @@
 // Import any package as required
 
 
+import org.w3c.dom.ls.LSOutput;
+
+import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.PriorityQueue;
+
+
 public class HuffmanSubmit implements Huffman {
+
+    // Huffman Node
+    public class HuffmanNode implements Comparable<HuffmanNode> {
+        String binaryString;
+        int frequency;
+        HuffmanNode left;
+        HuffmanNode right;
+        HuffmanNode root;
+
+
+        public HuffmanNode(String binaryString, int frequency) {
+            this.binaryString = binaryString;
+            this.frequency = frequency;
+        }
+
+        public HuffmanNode(HuffmanNode left, HuffmanNode right) {
+            this.left = left;
+            this.right = right;
+            this.frequency = left.frequency + right.frequency;
+        }
+
+        @Override
+        public int compareTo(HuffmanNode o) {
+            return this.frequency - o.frequency;
+        }
+
+        @Override
+        public String toString() {
+            return "HuffmanNode{" +
+                    "binaryString='" + binaryString + '\'' +
+                    ", frequency=" + frequency +
+                    ", left=" + left +
+                    ", right=" + right +
+                    '}';
+        }
+    }
   
 
  
 	public void encode(String inputFile, String outputFile, String freqFile){
-        //use tree to encode
-        readFreq(inputFile, freqFile);
-        Node root = buildTree(freqFile);
-        String[] codes = new String[256];
-        //build codes for each char and store in codes array
-        buildCodes(root, codes, "");
-        //read file and encode
-        String s = readBinary(inputFile);
-        String encoded = "";
-        for(int i = 0; i < s.length(); i++){
-            encoded += codes[s.charAt(i)];
+        // Generate character frequency
+        HuffmanNode root = null;
+        try {
+            generateCharacterFrequency(inputFile, freqFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        //write encoded file in binary using binaryOut
-        BinaryOut out = new BinaryOut(outputFile);
-        for(int i = 0; i < encoded.length(); i++){
-            out.write(encoded.charAt(i) == '1');
+        // Build priority queue
+        try {
+            root= createPriorityQueue(freqFile);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        out.close();
+        // Create binary map
+        Map<String, String> binaryMap = createBinaryMap(root);
+        // Encode file using binary map
+        try {
+            encodeFile(inputFile, binaryMap);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // Write encoded file to output file
+        try {
+            writeStringToBinaryFile(encodeFile(inputFile, binaryMap), outputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
    }
 
 
-   public void decode(String inputFile, String outputFile, String freqFile){
-        //read freq table and build tree
-        Node root = buildTree(freqFile);
-        //read file and decode
-        String s = readBinary(inputFile);
-        String decoded = "";
-        Node temp = root;
 
-        }
-        //write decoded file in binary using binaryOut
-        BinaryOut out = new BinaryOut(outputFile);
-        for(int i = 0; i < decoded.length(); i++){
-            out.write(decoded.charAt(i) == '1');
-        }
-        out.close();
+   public void decode(String inputFile, String outputFile, String freqFile) {
 
    }
 
-   //read file and store as binary string
-    public String readBinary(String input){
-         try{
-              FileInputStream in = new FileInputStream(input);
-              int c;
-              String s = "";
-              while((c = in.read()) != -1){
-                String temp = Integer.toBinaryString(c);
-                while(temp.length() < 8){
-                     temp = "0" + temp;
-                }
-                s += temp;
-              }
-              in.close();
-              return s;
-         }catch(IOException e){
-              System.out.println("Error: " + e.getMessage());
-              return null;
-         }
-    }
 
-   //read file and write freq table
-    public void readFreq(String input, String freqFile){
-        try{
-            FileInputStream in = new FileInputStream(input);
-            FileOutputStream out = new FileOutputStream(freqFile);
-            int[] freq = new int[256];
-            int c;
-            while((c = in.read()) != -1){
-                freq[c]++;
-            }
-            for(int i = 0; i < 256; i++){
-                if(freq[i] != 0){
-                    String s = Integer.toBinaryString(i);
-                    while(s.length() < 8){
-                        s = "0" + s;
-                    }
-                    s += ":" + freq[i] + "\n";
-                    out.write(s.getBytes());
+    // Read file and return file with character frequency
+    public String generateCharacterFrequency(String inputFile, String freqFile) throws IOException {
+        Map<String, Integer> frequencyMap = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            for (char c : line.toCharArray()) {
+                String binaryString = String.format("%8s", Integer.toBinaryString(c & 0xFF)).replace(' ', '0');
+                if (frequencyMap.containsKey(binaryString)) {
+                    frequencyMap.put(binaryString, frequencyMap.get(binaryString) + 1);
+                } else {
+                    frequencyMap.put(binaryString, 1);
                 }
             }
-            in.close();
-            out.close();
-        }catch(IOException e){
-            System.out.println("Error: " + e.getMessage());
         }
-
+        reader.close();
+        FileOutputStream out = new FileOutputStream(freqFile);
+        for (String binaryString : frequencyMap.keySet()) {
+            int frequency = frequencyMap.get(binaryString);
+            out.write((binaryString + ":" + frequency + "\n").getBytes());
+        }
+        out.close();
+        return freqFile;
     }
 
-    //read freq table and build huffman tree
-    public Node buildTree(String freqFile){
-        try{
-            FileInputStream in = new FileInputStream(freqFile);
-            int c;
-            String s = "";
-            while((c = in.read()) != -1){
-                s += (char)c;
+    //create huffman tree in order of increasing frequency
+        public HuffmanNode createPriorityQueue(String freqFile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(freqFile));
+        String line;
+        PriorityQueue<HuffmanNode> priorityQueue = new PriorityQueue<>();
+        while ((line = reader.readLine()) != null) {
+            String[] split = line.split(":");
+            String binaryString = split[0];
+            int frequency = Integer.parseInt(split[1]);
+            priorityQueue.add(new HuffmanNode(binaryString, frequency));
+        }
+        reader.close();
+        while (priorityQueue.size() > 1) {
+            HuffmanNode left = priorityQueue.poll();
+            HuffmanNode right = priorityQueue.poll();
+            priorityQueue.add(new HuffmanNode(left, right));
+        }
+        HuffmanNode root = priorityQueue.poll();
+        return root;
+    }
+
+    // Create a map of character to binary string from huffman tree
+    public Map<String, String> createBinaryMap(HuffmanNode root) {
+        Map<String, String> binaryMap = new HashMap<>();
+        createBinaryMap(root, binaryMap, "");
+        return binaryMap;
+    }
+
+    // Recursive helper function for createBinaryMap
+    public void createBinaryMap(HuffmanNode root, Map<String, String> binaryMap, String binaryString) {
+        if (root.left == null && root.right == null) {
+            binaryMap.put(root.binaryString, binaryString);
+        } else {
+            createBinaryMap(root.left, binaryMap, binaryString + "0");
+            createBinaryMap(root.right, binaryMap, binaryString + "1");
+        }
+    }
+
+    //use binary map to encode file and store as string
+    public String encodeFile(String inputFile, Map<String, String> binaryMap) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
+        String line;
+        StringBuilder stringBuilder = new StringBuilder();
+        while ((line = reader.readLine()) != null) {
+            for (char c : line.toCharArray()) {
+                String binaryString = String.format("%8s", Integer.toBinaryString(c & 0xFF)).replace(' ', '0');
+                stringBuilder.append(binaryMap.get(binaryString));
+
             }
-            String[] lines = s.split("\n");
-            Node[] nodes = new Node[lines.length];
-            for(int i = 0; i < lines.length; i++){
-                String[] line = lines[i].split(":");
-                nodes[i] = new Node(Integer.parseInt(line[1]), Integer.parseInt(line[0], 2));
-            }
-            in.close();
-            return buildTree(nodes);
-        }catch(IOException e){
-            System.out.println("Error: " + e.getMessage());
-            return null;
         }
+        reader.close();
+        String encodedString = stringBuilder.toString();
+
+        return encodedString;
     }
 
-    //build codes
-    public void buildCodes(Node root, String[] codes, String code){
-        if(root == null){
-            return;
+    //take string and write to binary file using BinaryOut class
+    public void writeStringToBinaryFile(String encodedString, String outputFile) throws IOException {
+        BinaryOut binaryOut = new BinaryOut(outputFile);
+        for (char c : encodedString.toCharArray()) {
+            binaryOut.write(c == '1');
         }
-        if(root.left == null && root.right == null){
-            codes[root.c] = code;
-            return;
-        }
-        buildCodes(root.left, codes, code + "0");
-        buildCodes(root.right, codes, code + "1");
+        binaryOut.close();
     }
 
 
 
-
-
-
-
-   public static void main(String[] args) {
+    public static void main(String[] args) {
       Huffman  huffman = new HuffmanSubmit();
-		huffman.encode("ur.jpg", "ur.enc", "freq.txt");
+		huffman.encode("tamzy.txt", "ur.enc", "freq.txt");
 		huffman.decode("ur.enc", "ur_dec.jpg", "freq.txt");
 		// After decoding, both ur.jpg and ur_dec.jpg should be the same. 
 		// On linux and mac, you can use `diff' command to check if they are the same. 
    }
 
+
+
 }
+
