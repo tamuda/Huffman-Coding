@@ -69,11 +69,6 @@ public class HuffmanSubmit implements Huffman {
         // Create binary map
         Map<String, String> binaryMap = createBinaryMap(root);
         // Encode file using binary map
-        try {
-            encodeFile(inputFile, binaryMap);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         // Write encoded file to output file
         try {
             writeStringToBinaryFile(encodeFile(inputFile, binaryMap), outputFile);
@@ -85,7 +80,21 @@ public class HuffmanSubmit implements Huffman {
 
 
    public void decode(String inputFile, String outputFile, String freqFile) {
-
+        //create prioty queue
+        HuffmanNode root = null;
+        try{
+            root = createPriorityQueue(freqFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //create binary map
+        Map<String, String> binaryMap = createBinaryMap(root);
+        //decode file
+       try{
+           decodeFile(inputFile, outputFile, binaryMap);
+       } catch (IOException e) {
+           e.printStackTrace();
+       }
    }
 
 
@@ -165,18 +174,55 @@ public class HuffmanSubmit implements Huffman {
             }
         }
         reader.close();
-        String encodedString = stringBuilder.toString();
 
-        return encodedString;
+        System.out.println("enc " +stringBuilder.toString());
+        return stringBuilder.toString();
     }
 
     //take string and write to binary file using BinaryOut class
     public void writeStringToBinaryFile(String encodedString, String outputFile) throws IOException {
         BinaryOut binaryOut = new BinaryOut(outputFile);
-        for (char c : encodedString.toCharArray()) {
+        int i = 0;
+        while (i < encodedString.length()) {
+            char c = encodedString.charAt(i);
             binaryOut.write(c == '1');
+            System.out.println(c);
+            i++;
         }
         binaryOut.close();
+    }
+
+
+    //read file and return string of binary
+    public String readBinaryFileToString(String inputFile) throws IOException {
+        BinaryIn binaryIn = new BinaryIn(inputFile);
+        StringBuilder stringBuilder = new StringBuilder();
+        while (!binaryIn.isEmpty()) {
+            stringBuilder.append(binaryIn.readBoolean() ? "1" : "0");
+        }
+
+        return stringBuilder.toString();
+    }
+
+    //decode file using binary map
+    public void decodeFile(String inputFile, String outputFile, Map<String, String> binaryMap) throws IOException {
+        String encodedString = readBinaryFileToString(inputFile);
+        StringBuilder stringBuilder = new StringBuilder();
+        String binaryString = "";
+        for (char c : encodedString.toCharArray()) {
+            binaryString += c;
+            if (binaryMap.containsValue(binaryString)) {
+                for (String key : binaryMap.keySet()) {
+                    if (binaryMap.get(key).equals(binaryString)) {
+                        stringBuilder.append(key);
+                        binaryString = "";
+                    }
+                }
+            }
+        }
+        String decodedString = stringBuilder.toString();
+
+        writeStringToBinaryFile(decodedString, outputFile);
     }
 
 
@@ -184,7 +230,8 @@ public class HuffmanSubmit implements Huffman {
     public static void main(String[] args) {
       Huffman  huffman = new HuffmanSubmit();
 		huffman.encode("tamzy.txt", "ur.enc", "freq.txt");
-		huffman.decode("ur.enc", "ur_dec.jpg", "freq.txt");
+		huffman.decode("ur.enc", "ur_dec.txt", "freq.txt");
+
 		// After decoding, both ur.jpg and ur_dec.jpg should be the same. 
 		// On linux and mac, you can use `diff' command to check if they are the same. 
    }
