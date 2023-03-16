@@ -105,6 +105,7 @@ public class HuffmanSubmit implements Huffman {
         String line;
         while ((line = reader.readLine()) != null) {
             for (char c : line.toCharArray()) {
+                //convert char to binary
                 String binaryString = String.format("%8s", Integer.toBinaryString(c & 0xFF)).replace(' ', '0');
                 if (frequencyMap.containsKey(binaryString)) {
                     frequencyMap.put(binaryString, frequencyMap.get(binaryString) + 1);
@@ -144,7 +145,7 @@ public class HuffmanSubmit implements Huffman {
         return root;
     }
 
-    // Create a map of character to binary string from huffman tree
+    // Creates a map of character to binary string from huffman tree
     public Map<String, String> createBinaryMap(HuffmanNode root) {
         Map<String, String> binaryMap = new HashMap<>();
         createBinaryMap(root, binaryMap, "");
@@ -161,7 +162,7 @@ public class HuffmanSubmit implements Huffman {
         }
     }
 
-    //use binary map to encode file and store as string
+    //uses binary map to encode file and store as string
     public String encodeFile(String inputFile, Map<String, String> binaryMap) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(inputFile));
         String line;
@@ -179,21 +180,25 @@ public class HuffmanSubmit implements Huffman {
         return stringBuilder.toString();
     }
 
-    //take string and write to binary file using BinaryOut class
+
+    //takes string and write to binary file using BinaryOut class
     public void writeStringToBinaryFile(String encodedString, String outputFile) throws IOException {
         BinaryOut binaryOut = new BinaryOut(outputFile);
+        StringBuilder written = new StringBuilder();
         int i = 0;
         while (i < encodedString.length()) {
             char c = encodedString.charAt(i);
             binaryOut.write(c == '1');
-            System.out.println(c);
+            written.append(c);
+
             i++;
         }
         binaryOut.close();
+        System.out.println("this is the written: "+ written.toString());
     }
 
 
-    //read file and return string of binary
+    //reads file and return string of binary
     public String readBinaryFileToString(String inputFile) throws IOException {
         BinaryIn binaryIn = new BinaryIn(inputFile);
         StringBuilder stringBuilder = new StringBuilder();
@@ -204,7 +209,7 @@ public class HuffmanSubmit implements Huffman {
         return stringBuilder.toString();
     }
 
-    //decode file using binary map
+    //decodes file using binary map
     public void decodeFile(String inputFile, String outputFile, Map<String, String> binaryMap) throws IOException {
         String encodedString = readBinaryFileToString(inputFile);
         StringBuilder stringBuilder = new StringBuilder();
@@ -229,7 +234,7 @@ public class HuffmanSubmit implements Huffman {
 
     public static void main(String[] args) {
       Huffman  huffman = new HuffmanSubmit();
-		huffman.encode("tamzy.txt", "ur.enc", "freq.txt");
+		huffman.encode("alice30.txt", "ur.enc", "freq.txt");
 		huffman.decode("ur.enc", "ur_dec.txt", "freq.txt");
 
 		// After decoding, both ur.jpg and ur_dec.jpg should be the same. 
