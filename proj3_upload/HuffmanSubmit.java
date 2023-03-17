@@ -18,6 +18,7 @@ public class HuffmanSubmit implements Huffman {
     public class HuffmanNode implements Comparable<HuffmanNode> {
         String binaryString;
         int frequency;
+        public int totalChar=0;
         HuffmanNode left;
         HuffmanNode right;
         HuffmanNode root;
@@ -53,6 +54,7 @@ public class HuffmanSubmit implements Huffman {
 
  
 	public void encode(String inputFile, String outputFile, String freqFile){
+
         // Generate character frequency
         HuffmanNode root = null;
         try {
@@ -97,12 +99,24 @@ public class HuffmanSubmit implements Huffman {
        }
    }
 
+   //calculate number of characters from freq file
+    public int totalCharFreq(String freqFile) throws IOException {
+         int totalChars = 0;
+         String readline;
+         BufferedReader in = new BufferedReader(new FileReader(freqFile));
+         while ((readline = in.readLine()) != null) {
+              String[] split = readline.split(":");
+              totalChars += Integer.parseInt(split[1]);
+         }
+         return totalChars;
+    }
 
     // Read file and return file with character frequency
     public String generateCharacterFrequency(String inputFile, String freqFile) throws IOException {
         Map<String, Integer> frequencyMap = new HashMap<>();
         BufferedReader reader = new BufferedReader(new FileReader(inputFile));
         String line;
+
         while ((line = reader.readLine()) != null) {
             for (char c : line.toCharArray()) {
                 //convert char to binary
@@ -113,6 +127,8 @@ public class HuffmanSubmit implements Huffman {
                     frequencyMap.put(binaryString, 1);
                 }
             }
+            frequencyMap.put("00001010", frequencyMap.getOrDefault("00001010", 0) + 1);
+
         }
         reader.close();
         FileOutputStream out = new FileOutputStream(freqFile);
@@ -147,19 +163,23 @@ public class HuffmanSubmit implements Huffman {
 
     // Creates a map of character to binary string from huffman tree
     public Map<String, String> createBinaryMap(HuffmanNode root) {
+
         Map<String, String> binaryMap = new HashMap<>();
         createBinaryMap(root, binaryMap, "");
+
         return binaryMap;
     }
 
     // Recursive helper function for createBinaryMap
     public void createBinaryMap(HuffmanNode root, Map<String, String> binaryMap, String binaryString) {
+
         if (root.left == null && root.right == null) {
             binaryMap.put(root.binaryString, binaryString);
         } else {
             createBinaryMap(root.left, binaryMap, binaryString + "0");
             createBinaryMap(root.right, binaryMap, binaryString + "1");
         }
+
     }
 
     //uses binary map to encode file and store as string
@@ -173,10 +193,12 @@ public class HuffmanSubmit implements Huffman {
                 stringBuilder.append(binaryMap.get(binaryString));
 
             }
+            stringBuilder.append(binaryMap.get("00001010"));
+
         }
         reader.close();
 
-        System.out.println("enc " +stringBuilder.toString());
+
         return stringBuilder.toString();
     }
 
@@ -186,6 +208,7 @@ public class HuffmanSubmit implements Huffman {
         BinaryOut binaryOut = new BinaryOut(outputFile);
         StringBuilder written = new StringBuilder();
         int i = 0;
+
         while (i < encodedString.length()) {
             char c = encodedString.charAt(i);
             binaryOut.write(c == '1');
@@ -193,8 +216,9 @@ public class HuffmanSubmit implements Huffman {
 
             i++;
         }
+        binaryOut.flush();
         binaryOut.close();
-        System.out.println("this is the written: "+ written.toString());
+
     }
 
 
@@ -214,16 +238,26 @@ public class HuffmanSubmit implements Huffman {
         String encodedString = readBinaryFileToString(inputFile);
         StringBuilder stringBuilder = new StringBuilder();
         String binaryString = "";
-        for (char c : encodedString.toCharArray()) {
-            binaryString += c;
-            if (binaryMap.containsValue(binaryString)) {
-                for (String key : binaryMap.keySet()) {
-                    if (binaryMap.get(key).equals(binaryString)) {
-                        stringBuilder.append(key);
-                        binaryString = "";
+
+        int totalChar = totalCharFreq("freq.txt");
+        char[] split = encodedString.toCharArray();
+        int i = 0;
+            for (char c : split) {
+                binaryString += c;
+                if (i == totalChar) {
+                    break;
+                }
+                if (binaryMap.containsValue(binaryString)) {
+                    for (String key : binaryMap.keySet()) {
+                        if (binaryMap.get(key).equals(binaryString)) {
+                            stringBuilder.append(key);
+                            binaryString = "";
+                            i++;
+
                     }
                 }
             }
+
         }
         String decodedString = stringBuilder.toString();
 
