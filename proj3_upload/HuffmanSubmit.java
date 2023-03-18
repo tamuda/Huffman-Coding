@@ -50,9 +50,9 @@ public class HuffmanSubmit implements Huffman {
                     '}';
         }
     }
-  
 
- 
+
+
 	public void encode(String inputFile, String outputFile, String freqFile){
 
         // Generate character frequency
@@ -114,23 +114,24 @@ public class HuffmanSubmit implements Huffman {
     // Read file and return file with character frequency
     public String generateCharacterFrequency(String inputFile, String freqFile) throws IOException {
         Map<String, Integer> frequencyMap = new HashMap<>();
-        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-        String line;
-
-        while ((line = reader.readLine()) != null) {
-            for (char c : line.toCharArray()) {
-                //convert char to binary
-                String binaryString = String.format("%8s", Integer.toBinaryString(c & 0xFF)).replace(' ', '0');
-                if (frequencyMap.containsKey(binaryString)) {
-                    frequencyMap.put(binaryString, frequencyMap.get(binaryString) + 1);
-                } else {
-                    frequencyMap.put(binaryString, 1);
-                }
+        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(inputFile));
+        int b;
+        while ((b = inputStream.read()) != -1) {
+            //convert byte to binary
+            String binaryString = String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+            if (frequencyMap.containsKey(binaryString)) {
+                frequencyMap.put(binaryString, frequencyMap.get(binaryString) + 1);
+            } else {
+                frequencyMap.put(binaryString, 1);
             }
-            frequencyMap.put("00001010", frequencyMap.getOrDefault("00001010", 0) + 1);
+
+
+
 
         }
-        reader.close();
+
+        inputStream.close();
+
         FileOutputStream out = new FileOutputStream(freqFile);
         for (String binaryString : frequencyMap.keySet()) {
             int frequency = frequencyMap.get(binaryString);
@@ -139,6 +140,7 @@ public class HuffmanSubmit implements Huffman {
         out.close();
         return freqFile;
     }
+
 
     //create huffman tree in order of increasing frequency
         public HuffmanNode createPriorityQueue(String freqFile) throws IOException {
@@ -184,21 +186,18 @@ public class HuffmanSubmit implements Huffman {
 
     //uses binary map to encode file and store as string
     public String encodeFile(String inputFile, Map<String, String> binaryMap) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(inputFile));
-        String line;
+//use readBinaryFileToString to read file as string
+        StringBuilder binaryString = new StringBuilder();
+        String fileString = readBinaryFileToString(inputFile);
         StringBuilder stringBuilder = new StringBuilder();
-        while ((line = reader.readLine()) != null) {
-            for (char c : line.toCharArray()) {
-                String binaryString = String.format("%8s", Integer.toBinaryString(c & 0xFF)).replace(' ', '0');
-                stringBuilder.append(binaryMap.get(binaryString));
-
+        char[] split = fileString.toCharArray();
+        for (char c : split) {
+            binaryString.append(c);
+            if (binaryMap.containsKey(binaryString.toString())) {
+                stringBuilder.append(binaryMap.get(binaryString.toString()));
+                binaryString = new StringBuilder();
             }
-            stringBuilder.append(binaryMap.get("00001010"));
-
         }
-        reader.close();
-
-
         return stringBuilder.toString();
     }
 
@@ -223,15 +222,21 @@ public class HuffmanSubmit implements Huffman {
 
 
     //reads file and return string of binary
-    public String readBinaryFileToString(String inputFile) throws IOException {
-        BinaryIn binaryIn = new BinaryIn(inputFile);
-        StringBuilder stringBuilder = new StringBuilder();
-        while (!binaryIn.isEmpty()) {
-            stringBuilder.append(binaryIn.readBoolean() ? "1" : "0");
+    public static String readBinaryFileToString(String filePath) throws IOException {
+        File file = new File(filePath);
+        FileInputStream fis = new FileInputStream(file);
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+        StringBuilder sb = new StringBuilder();
+        while ((bytesRead = fis.read(buffer)) != -1) {
+            for (int i = 0; i < bytesRead; i++) {
+                sb.append(String.format("%8s", Integer.toBinaryString(buffer[i] & 0xFF)).replace(' ', '0'));
+            }
         }
-
-        return stringBuilder.toString();
+        fis.close();
+        return sb.toString();
     }
+
 
     //decodes file using binary map
     public void decodeFile(String inputFile, String outputFile, Map<String, String> binaryMap) throws IOException {
@@ -268,11 +273,11 @@ public class HuffmanSubmit implements Huffman {
 
     public static void main(String[] args) {
       Huffman  huffman = new HuffmanSubmit();
-		huffman.encode("alice30.txt", "ur.enc", "freq.txt");
-		huffman.decode("ur.enc", "ur_dec.txt", "freq.txt");
+		huffman.encode("ur.jpg", "ur.enc", "freq.txt");
+		huffman.decode("ur.enc", "ur_dec.jpg", "freq.txt");
 
-		// After decoding, both ur.jpg and ur_dec.jpg should be the same. 
-		// On linux and mac, you can use `diff' command to check if they are the same. 
+		// After decoding, both ur.jpg and ur_dec.jpg should be the same.
+		// On linux and mac, you can use `diff' command to check if they are the same.
    }
 
 
