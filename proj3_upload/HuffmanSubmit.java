@@ -1,8 +1,6 @@
 // Import any package as required
 
 
-import org.w3c.dom.ls.LSOutput;
-
 import java.io.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -50,7 +48,12 @@ public class HuffmanSubmit implements Huffman {
                     '}';
         }
     }
+    public static void main(String[] args) {
+        Huffman  huffman = new HuffmanSubmit();
+        huffman.encode("alice30.txt", "ur.enc", "freq.txt");
+        huffman.decode("ur.enc", "ur_dec.jpg", "freq.txt");
 
+    }
 
 
 	public void encode(String inputFile, String outputFile, String freqFile){
@@ -77,6 +80,8 @@ public class HuffmanSubmit implements Huffman {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        //print huffman tree
+        printTree(root);
    }
 
 
@@ -269,14 +274,29 @@ public class HuffmanSubmit implements Huffman {
         writeStringToBinaryFile(decodedString, outputFile);
     }
 
+    //print animation of huffman tree
+    public void printTree(HuffmanNode root) {
+
+        printTree(root, 0);
+    }
+
+    //recursive helper function for printTree
+    public void printTree(HuffmanNode root, int i) {
+        if (root == null) {
+            return;
+        }
+        printTree(root.right, i + 1);
+        for (int j = 0; j < i; j++) {
+            System.out.print("    ");
+        }
+        System.out.println(root.binaryString + " " + root.frequency);
+        printTree(root.left, i + 1);
+    }
 
 
-    public static void main(String[] args) {
-      Huffman  huffman = new HuffmanSubmit();
-		huffman.encode("alice30.txt", "ur.enc", "freq.txt");
-		huffman.decode("ur.enc", "ur_dec.jpg", "freq.txt");
 
-   }
+    //envoked by main method
+
 
 
 
